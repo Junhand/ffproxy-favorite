@@ -1,23 +1,26 @@
 /*
  * ffproxy (c) 2002, 2003 Niklas Olmes <niklas@noxa.de>
  * http://faith.eu.org
- * 
+ *
  * $Id: socket.c,v 2.1 2004/12/31 08:59:15 niklas Exp $
- * 
+ *
  * This program is free software; you can redistribute it and/or modify it under
  * the terms of the GNU General Public License as published by the Free
  * Software Foundation; either version 2 of the License, or (at your option)
  * any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful, but WITHOUT
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
  * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
  * more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License along with
  * this program; if not, write to the Free Software Foundation, Inc., 675
  * Mass Ave, Cambridge, MA 02139, USA.
  */
+
+ #include <string.h>
+ #include <stdbool.h>
 
 #include "configure.h"
 #ifdef HAVE_SYS_TYPES_H
@@ -54,6 +57,9 @@
 #define INFTIM	-1
 #endif
 
+int import_data(char *);
+int makehtml(char *);
+
 void
 open_socket(void)
 {
@@ -80,7 +86,7 @@ open_socket(void)
 		num_fd++;
 	if (config.bind_ipv6)
 		num_fd++;
-		
+
 	i = 0;
 	(void) memset(s, 0, sizeof(s));
 	s[0].fd = s[1].fd = 0;
@@ -125,11 +131,11 @@ open_socket(void)
 			fatal("listen() failed for (%s) %s",ip_add, (i == 0 && config.bind_ipv4) ? "IPv4" : "IPv6");
 		}
 		freeaddrinfo(res);
-	
+
 		s[i].events = POLLIN;
 		i++;
 	}
-	
+
 	if (config.bind_ipv4)
 		info("waiting for requests on %s port %d (IPv4)", *config.ipv4 ? config.ipv4 : "(any)", config.port);
 	if (config.bind_ipv6)
@@ -171,6 +177,9 @@ open_socket(void)
 			DEBUG(("open_socket() => no access"));
 			if (config.logrequests)
 				info("connection attempt from (%s) [%s], ACCESS DENIED", clinfo->name, clinfo->ip);
+				//ここでclinfo->ipにクライアントのipがある
+				import_data(clinfo->ip);
+
 			free(clinfo);
 			(void) close(cl);
 			continue;
@@ -200,4 +209,53 @@ open_socket(void)
 	}
 
 	/* NOTREACHED */
+
 }
+1	int import_data(char *clip){
+2	    FILE    *fp;
+3	    char    filename[19];
+4	    char    openhtml[26];
+5
+6	    sprintf(openhtml,"open %s.html",clip);//htmlfilenameをget
+7
+8	    /*最初のアクセス時に問答無用でこちらからhtmlを送り付ける*/
+9	    makehtml(clip);//dbからhtmlファイル作成
+10
+11	    system(openhtml);//htmlファイルを開く
+12	    return EXIT_SUCCESS;
+13	}
+14
+15	int makehtml(char *clip){
+16	  FILE    *htmlfile,*dbfile;
+17	  int     count;
+18	  char    url[1024];
+19	  char    filename[19];
+20	  char    dbfilename[19];
+21	  char    code[1024];
+22
+23	  sprintf(filename,"%s.html",clip);
+24	  sprintf(dbfilename,"%s.db",clip);
+25
+26	  htmlfile = fopen(filename,"w+");
+27	  dbfile = fopen(dbfilename,"r+");
+28
+29	    fprintf(htmlfile,"<!DOCTYPE html>\n");
+30	    fprintf(htmlfile,"<html>\n");
+31	    fprintf(htmlfile,"<head>\n");
+32	    fprintf(htmlfile,"<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">\n");
+33	    fprintf(htmlfile,"<title>[TEST]ログイン画面</title>\n");
+34	    fprintf(htmlfile,"</head>\n");
+35	    fprintf(htmlfile,"<body>\n");
+36	    fprintf(htmlfile,"<h1>お気に入り</h1>\n");
+37	    while(fscanf(dbfile,"%s %d",url,&count)!=EOF){
+38	      if(count >= 3){
+39	        fprintf(htmlfile,"<a href=\"%s\">%s</a><br>\n",url,url);
+40	      }
+41	    }
+42	    fprintf(htmlfile,"</body>\n");
+43	    fprintf(htmlfile,"</html>\n");
+44
+45	  fclose(dbfile);
+46	  fclose(htmlfile);
+47	  return EXIT_SUCCESS;
+48	}

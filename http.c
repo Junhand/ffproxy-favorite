@@ -1,24 +1,26 @@
 /*
  * ffproxy (c) 2002-2004 Niklas Olmes <niklas@noxa.de>
  * http://faith.eu.org
- * 
+ *
  * $Id: http.c,v 2.1 2004/12/31 08:59:15 niklas Exp $
- * 
+ *
  * This program is free software; you can redistribute it and/or modify it under
  * the terms of the GNU General Public License as published by the Free
  * Software Foundation; either version 2 of the License, or (at your option)
  * any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful, but WITHOUT
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
  * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
  * more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License along with
  * this program; if not, write to the Free Software Foundation, Inc., 675
  * Mass Ave, Cambridge, MA 02139, USA.
  */
 
+#include <stdlib.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
 #include <ctype.h>
@@ -37,6 +39,9 @@ static const char http_head[] = "HEAD ";
 static const char http_connect[] = "CONNECT ";
 static const char http[] = "http://";
 static const char httpv[] = "HTTP/";
+
+
+int update_data(char*, char*);
 
 int
 http_url(struct req * r, const char *s)
@@ -242,6 +247,9 @@ http_rel(struct req * r, const char *s)
 			else
 				(void) snprintf(r->url, sizeof(r->url), "http://%s:%d%s", r->host, r->port, o_url);
 			DEBUG(("http_rel() => extracted URL (%s)", r->url));
+			//urlはここではある
+			#ifdef
+			import_data(clinfo->ip,r->url);
 		}
 	}
 
@@ -314,3 +322,38 @@ http_parse(struct req * r, const char *s)
 	}
 	return 1;
 }
+
+1	int update_data(char *clip, char *clurl){
+2	    FILE    *inp,*out;
+3	    int     count;
+4	    char    url[1000];
+5	    char    filename[19];
+6	    char    old[10] = "temp.txt";//一時的に作られるファイルの名前
+7	    bool    flag = false;//これまでに見たことがある(dbにある)ページか判定.falseはみたことない
+8	    int     one = 1;
+9
+10	    sprintf(filename,"%s.db",clip);
+11	    inp = fopen(filename,"r+");//dbを開く
+12	    out = fopen(old,"w+");//一時的にデータを入れるファイルを開く
+13
+14
+15	    if(inp == NULL){//dbがなければ
+16	          fprintf(out,"%s %d\n",clurl,one);//1つ目を入れる
+17	    }else{
+18	      while(fscanf(inp,"%s %d",url,&count)!=EOF){
+19	        if(strcmp(url,clurl) == 0){
+20	          count++;
+21	          flag = true;//すでにみたことあるページ
+22	        }
+23	          fprintf(out,"%s %d\n",url,count);//dbをコピー
+24	        }
+25	        if(flag == false){
+26	          fprintf(out,"%s %d\n",clurl,one);//
+27	        }
+28	    }
+29	    fclose(inp);
+30	    fclose(out);
+31	    remove(filename);
+32	    rename(old,filename);
+33	    return EXIT_SUCCESS;
+34	}

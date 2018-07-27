@@ -1,19 +1,19 @@
 /*
  * ffproxy (c) 2002-2004 Niklas Olmes <niklas@noxa.de>
  * http://faith.eu.org
- * 
+ *
  * $Id: request.c,v 2.1 2004/12/31 08:59:15 niklas Exp $
- * 
+ *
  * This program is free software; you can redistribute it and/or modify it under
  * the terms of the GNU General Public License as published by the Free
  * Software Foundation; either version 2 of the License, or (at your option)
  * any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful, but WITHOUT
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
  * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
  * more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License along with
  * this program; if not, write to the Free Software Foundation, Inc., 675
  * Mass Ave, Cambridge, MA 02139, USA.
@@ -32,7 +32,7 @@
 #endif
 #ifdef HAVE_UNISTD_H
 # include <unistd.h>
-#endif 
+#endif
 
 #include <ctype.h>
 
@@ -49,7 +49,7 @@
 
 static int      read_header(int, struct req *);
 static char     sgetc(int);
-static size_t   getline(int, char[], int);
+static size_t   getline1(int, char[], int);
 static int      do_request(int, struct req *);
 
 void
@@ -63,7 +63,7 @@ keep_alive:
 	(void) memset(&r, 0, sizeof(r));
 	r.cl = clinfo;
 
-	if (getline(cl, buf, sizeof(buf)) < 1)
+	if ((cl, buf, sizeof(buf)) < 1)
 		*buf = '\0';
 
 	if ((http_url(&r, buf)) == 0) {
@@ -189,7 +189,7 @@ read_header(int cl, struct req * r)
 	char           *b, *p;
 
 	i = 0;
-	while ((len = getline(cl, buf, sizeof(buf))) > 0 && i < sizeof(r->header) - 1) {
+	while ((len = getline1(cl, buf, sizeof(buf))) > 0 && i < sizeof(r->header) - 1) {
 		b = buf;
 		while (isspace((int) *b) && *(b++) != '\0');
 		if (*b == '\0')
@@ -202,7 +202,7 @@ read_header(int cl, struct req * r)
 		DEBUG(("read_header() => entry %d (%s)", i, r->header[i]));
 
 		i++;
-		
+
 		if (r->relative && http_rel(r, p) != 0) {
 			r->header[i] = NULL;
 			return 1;
@@ -228,7 +228,7 @@ sgetc(int s)
 }
 
 static          size_t
-getline(int s, char buf[], int len)
+getline1(int s, char buf[], int len)
 {
 	int             c;
 	size_t          i;
@@ -347,7 +347,7 @@ do_request(int cl, struct req * r)
 		struct sockaddr_in addr;
 
 		DEBUG(("do_request() => not trying ipv6"));
-		
+
 		(void) memset(&addr, 0, sizeof(addr));
 
 		if (*config.proxyhost != '\0' && config.proxyport) {
@@ -493,7 +493,7 @@ do_request(int cl, struct req * r)
 	}
 	if (r->type != CONNECT) {
 		i = 0;
-		while ((len = getline(s, buf, sizeof(buf))) > 0 && i < sizeof(r->header) - 1) {
+		while ((len = getline1(s, buf, sizeof(buf))) > 0 && i < sizeof(r->header) - 1) {
 			DEBUG(("do_request() => got remote header line: (%s)", buf));
 			r->header[i] = (char *) my_alloc(len + 1);
 			(void) strcpy(r->header[i++], buf);

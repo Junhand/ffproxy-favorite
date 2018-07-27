@@ -11,7 +11,7 @@
 #:bfcf%9005$
 #
 # This allows everyone to connect:
-#.*
+.*
 #
 # This allows everyone to connect via IPv6:
 #:
